@@ -7,7 +7,6 @@
 #include <time.h>
 #include <unistd.h>
 
-// constants
 #define PORT_MAX (1<<16)-1 // 65535
 #define BUFFER_SIZE 1000
 #define MAX_CLIENT 10
