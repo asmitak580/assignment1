@@ -24,15 +24,56 @@ get_time(void) {
 
 void
 handle_server(int port) {
+    double startTime = get_time();
     /* TODO: Implement server mode operation here */
     /* 1. Create a TCP/IP socket with `socket` system call */
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0)
     /* 2. `bind` socket to the given port number */
+    struct sockaddr_in sin;
+    bzero((char*)&sin, sizeof(sin));
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = INADDR_ANY;
+    sin.sin_port = htons(port);
+    bind(sockfd, (struct sockaddr *)&sin, sizeof(sin));
     /* 3. `listen` for TCP connections */
+    listen(sockfd, MAX_CLIENT);
     /* 4. Wait for the client connection with `accept` system call */
-    /* 5. After the connection is established, received data in chunks of 1000 bytes */
+    int n_sock;
+    int len = 0;
+    int bytesRead = 0;
+    while(1) {
+        if ((n_sock = accept(sockfd, (struct sockaddr *)&sin, &len)) < 0) {
+            perror("error in accept");
+            exit(EXIT_FAILURE);
+        }
+        struct sockaddr_in sin2;
+        bzero((char*)&sin2, sizeof(sin2));
+        sin2.sin_family = AF_INET;
+        sin2.sin_port = htons(port);
+        inet_pton(AF_INET, "192.168.10.10", &sin.sin_addr);
+        connect(sockfd, (struct sockaddr *)&sin2, sizeof(sin2));
+        /* 5. After the connection is established, received data in chunks of 1000 bytes */
+        char buf[BUFFER_SIZE];
+        while (len = recv(n_sock, buf, sizeof(buf), 0)) {
+            bytesRead += len;
+            fputs(buf, stdout);
+        }
+
+    }
+    
+    
     /* 6. When the connection is closed, the program should print out the elapsed time, */
+    double totalTimeNano = get_time() - startTime;
+    double totalTimeSec = totalTimeNano / 1000000000.0;
+    fprintf(stdout, "Time elapsed (seconds): %f\n", totalTimeSec);
     /*    the total number of bytes received (in kilobytes), and the rate */ 
+    double totalKBRead = bytesRead / 1000.0;
+    fprintf(stdout, "Total Number of bytes received: %f\n", totalKBRead);
     /*    at which the program received data (in Mbps) */
+    double bitsRead = bytesRead * 8.0;
+    double mbRead = bitsRead / 1000000.0;
+    double rateReceived = mbRead / totalTimeSec;
+    fprintf(stdout, "Rate of retrieval (Mbps): %f\n", rateReceived);
 
     return;
 }
