@@ -22,10 +22,10 @@ get_time(void) {
     return now.tv_sec + (now.tv_nsec * 1e-9);
 }
 
+/* TODO: Implement server mode operation here */
 void
 handle_server(int port) {
     double startTime = get_time();
-    /* TODO: Implement server mode operation here */
     /* 1. Create a TCP/IP socket with `socket` system call */
     int sockfd = socket(AF_INET, SOCK_STREAM, 0)
     /* 2. `bind` socket to the given port number */
@@ -36,30 +36,34 @@ handle_server(int port) {
     sin.sin_port = htons(port);
     bind(sockfd, (struct sockaddr *)&sin, sizeof(sin));
     /* 3. `listen` for TCP connections */
+    // MAX_CLIENT can be pending
     listen(sockfd, MAX_CLIENT);
     /* 4. Wait for the client connection with `accept` system call */
     int n_sock;
     int len = 0;
     int bytesRead = 0;
+    
     while(1) {
         if ((n_sock = accept(sockfd, (struct sockaddr *)&sin, &len)) < 0) {
             perror("error in accept");
             exit(EXIT_FAILURE);
         }
-        struct sockaddr_in sin2;
-        bzero((char*)&sin2, sizeof(sin2));
-        sin2.sin_family = AF_INET;
-        sin2.sin_port = htons(port);
-        inet_pton(AF_INET, "192.168.10.10", &sin.sin_addr);
-        connect(sockfd, (struct sockaddr *)&sin2, sizeof(sin2));
+
         /* 5. After the connection is established, received data in chunks of 1000 bytes */
         char buf[BUFFER_SIZE];
         while (len = recv(n_sock, buf, sizeof(buf), 0)) {
+            if(len==0) {
+                break;
+            } else if(len==-1) {
+                exit(EXIT_FAILURE);
+            }
             bytesRead += len;
             fputs(buf, stdout);
         }
-
+        close(n_sock);
+        break;
     }
+    close(sockfd);
     
     
     /* 6. When the connection is closed, the program should print out the elapsed time, */
@@ -68,7 +72,7 @@ handle_server(int port) {
     fprintf(stdout, "Time elapsed (seconds): %f\n", totalTimeSec);
     /*    the total number of bytes received (in kilobytes), and the rate */ 
     double totalKBRead = bytesRead / 1000.0;
-    fprintf(stdout, "Total Number of bytes received: %f\n", totalKBRead);
+    fprintf(stdout, "Total Number of kilobytes received: %f\n", totalKBRead);
     /*    at which the program received data (in Mbps) */
     double bitsRead = bytesRead * 8.0;
     double mbRead = bitsRead / 1000000.0;
@@ -78,17 +82,42 @@ handle_server(int port) {
     return;
 }
 
+/* TODO: Implement client mode operation here */
 void
 handle_client(const char *addr, int port, int duration) {
-    /* TODO: Implement client mode operation here */
     /* 1. Create a TCP/IP socket with socket system call */
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     /* 2. `connect` to the server specified by arguments (`addr`, `port`) */
+    struct sockaddr_in sin;
+    bzero((char*)&sin, sizeof(sin));
+    sin.sin_family = AF_INET;
+    sin.sin_port = htons(port);
+    inet_pton(AF_INET, addr, &sin.sin_addr);
+    connect(sockfd, (struct sockaddr *)&sin, sizeof(sin));
     /* 3. Send data to the connected server in chunks of 1000bytes */
+    char buf[BUFFER_SIZE];
+    double startSendTime = get_time(); // in nanosec
+    int durationNano = duration * 1000000000;
+    double lastPossibleSendTime = startSendTime + durationNano;
+    int bytesSent = 0;
+    while(get_time() <= lastPossibleSendTime && fgets(buf, sizeof(buf), stdin)) {
+        buf[BUFFER_SIZE-1] = '\0';
+        int len = strlen(buf) + 1;
+        bytesSent += len;
+        send(sockfd, buf, len, 0);
+    }
     /* 4. Close the connection after `duration` seconds */
+    close(sockfd);
     /* 5. When the connection is closed, the program should print out the elapsed time, */
     /*    the total number of bytes sent (in kilobytes), and the rate */ 
     /*    at which the program sent data (in Mbps) */
-
+    fprintf(stdout, "Time elapsed (seconds): %f\n", duration);
+    double totalKBSent = bytesSent / 1000.0;
+    fprintf(stdout, "Total Number of kilobytes sent: %f\n", totalKBSent);
+    double bitsSent = bytesSent * 8.0;
+    double mbSent = bitsSent / 1000000.0;
+    double rateSent = mbSent / duration;
+    fprintf(stdout, "Rate of sending (Mbps): %f\n", rateSent);
     return;
 }
 
@@ -133,9 +162,16 @@ main(int argc, char *argv[]) {
             exit(EXIT_FAILURE);
         }
 
-        /* TODO: Implement argument check here */
         /* 1. Check server_tcp_port is within the port number range */
         /* 2. Check the duration is a positive number */
+        if(server_tcp_port < 1 || server_tcp_port > PORT_MAX) {
+            fprintf(stderr, "server_tcp_port not in range.\n");
+            exit(EXIT_FAILURE);
+        }
+        if(duration<0) {
+            fprintf(stderr, "duration must be a positive number.\n");
+            exit(EXIT_FAILURE);
+        }
 
         printf("Client mode: Server IP = %s, Port = %d, Time Window = %d\n", server_host_ipaddr, server_tcp_port, duration);
         handle_client (server_host_ipaddr, server_tcp_port, duration);
@@ -147,8 +183,11 @@ main(int argc, char *argv[]) {
             exit(EXIT_FAILURE);
         }
 
-        /* TODO: Implement argument check here */
         /* Check server_tcp_port is within the port number range */
+        if(server_tcp_port < 1 || server_tcp_port > PORT_MAX) {
+            fprintf(stderr, "server_tcp_port not in range.\n");
+            exit(EXIT_FAILURE);
+        }
         
         printf("Server mode, Port = %d\n", server_tcp_port);
         handle_server(server_tcp_port);
