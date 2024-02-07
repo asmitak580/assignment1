@@ -85,6 +85,7 @@ handle_server(int port) {
 /* TODO: Implement client mode operation here */
 void
 handle_client(const char *addr, int port, int duration) {
+    fprintf(stdout, "in handle client");
     /* 1. Create a TCP/IP socket with socket system call */
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     /* 2. `connect` to the server specified by arguments (`addr`, `port`) */
@@ -93,7 +94,9 @@ handle_client(const char *addr, int port, int duration) {
     sin.sin_family = AF_INET;
     sin.sin_port = htons(port);
     inet_pton(AF_INET, addr, &sin.sin_addr);
+    printf("before connect");
     connect(sockfd, (struct sockaddr *)&sin, sizeof(sin));
+    printf("after connect");
     /* 3. Send data to the connected server in chunks of 1000bytes */
     char buf[BUFFER_SIZE];
     double startSendTime = get_time(); // in nanosec
@@ -101,6 +104,7 @@ handle_client(const char *addr, int port, int duration) {
     double lastPossibleSendTime = startSendTime + durationNano;
     int bytesSent = 0;
     while(get_time() <= lastPossibleSendTime && fgets(buf, sizeof(buf), stdin)) {
+        printf("inside while loop, sending packets");
         buf[BUFFER_SIZE-1] = '\0';
         int len = strlen(buf) + 1;
         bytesSent += len;
