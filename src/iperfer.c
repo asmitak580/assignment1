@@ -27,7 +27,7 @@ void
 handle_server(int port) {
     double startTime = get_time();
     /* 1. Create a TCP/IP socket with `socket` system call */
-    int sockfd = socket(AF_INET, SOCK_STREAM, 0)
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     /* 2. `bind` socket to the given port number */
     struct sockaddr_in sin;
     bzero((char*)&sin, sizeof(sin));
@@ -115,7 +115,7 @@ handle_client(const char *addr, int port, int duration) {
     /* 5. When the connection is closed, the program should print out the elapsed time, */
     /*    the total number of bytes sent (in kilobytes), and the rate */ 
     /*    at which the program sent data (in Mbps) */
-    fprintf(stdout, "Time elapsed (seconds): %f\n", duration);
+    fprintf(stdout, "Time elapsed (seconds): %d\n", duration);
     double totalKBSent = bytesSent / 1000.0;
     fprintf(stdout, "Total Number of kilobytes sent: %f\n", totalKBSent);
     double bitsSent = bytesSent * 8.0;
