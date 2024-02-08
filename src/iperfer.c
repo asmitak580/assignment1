@@ -6,6 +6,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/select.h>
 
 #define PORT_MAX (1<<16)-1 // 65535
 #define BUFFER_SIZE 1000
@@ -94,22 +95,41 @@ handle_client(const char *addr, int port, int duration) {
     sin.sin_family = AF_INET;
     sin.sin_port = htons(port);
     inet_pton(AF_INET, addr, &sin.sin_addr);
-    printf("before connect");
+    // printf("before connect\n");
     connect(sockfd, (struct sockaddr *)&sin, sizeof(sin));
-    printf("after connect");
+    // printf("after connect\n");
     /* 3. Send data to the connected server in chunks of 1000bytes */
     char buf[BUFFER_SIZE];
     double startSendTime = get_time(); // in nanosec
     int durationNano = duration * 1000000000;
     double lastPossibleSendTime = startSendTime + durationNano;
     int bytesSent = 0;
-    while(get_time() <= lastPossibleSendTime && fgets(buf, sizeof(buf), stdin)) {
-        printf("inside while loop, sending packets");
+    // printf("right before while loop\n");
+    fd_set rfds;
+    struct timeval tv;
+    FD_ZERO(&rfds);
+    FD_SET(0, &rfds); // stdin is fd 0
+    tv.tv_sec = 5;
+    tv.tv_usec = 0;
+    // keep sending
+    double curr_time = get_time();
+    int select_return  = select(1, &rfds, &buf, NULL, &tv);
+    // printf("curr_time before loop %f\n", curr_time);
+    // printf("select return before loop %d\n", select_return);
+    // printf("last possible send time %f\n", lastPossibleSendTime);
+    while(curr_time <= lastPossibleSendTime && select_return>=0) {
+        // && select(1, &rfds, &buf, NULL, &tv)>0
+        // printf("inside while loop, sending packets");
         buf[BUFFER_SIZE-1] = '\0';
         int len = strlen(buf) + 1;
         bytesSent += len;
         send(sockfd, buf, len, 0);
+        curr_time = get_time();
+        // printf("new curr_time inside loop %f\n", curr_time);
+        select_return = select(1, &rfds, &buf, NULL, &tv);
+        // printf("new select_return inside loop %d\n", select_return);
     }
+    // printf("done with while loop\n");
     /* 4. Close the connection after `duration` seconds */
     close(sockfd);
     /* 5. When the connection is closed, the program should print out the elapsed time, */
