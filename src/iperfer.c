@@ -26,7 +26,7 @@ get_time(void) {
 /* TODO: Implement server mode operation here */
 void
 handle_server(int port) {
-    double startTime = get_time();
+    
     /* 1. Create a TCP/IP socket with `socket` system call */
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     /* 2. `bind` socket to the given port number */
@@ -43,6 +43,8 @@ handle_server(int port) {
     int n_sock;
     int len = 0;
     int bytesRead = 0;
+
+    double startTime = get_time();
     
     while(1) {
         if ((n_sock = accept(sockfd, (struct sockaddr *)&sin, &len)) < 0) {
