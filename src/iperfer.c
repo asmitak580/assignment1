@@ -113,7 +113,6 @@ handle_client(const char *addr, int port, int duration) {
     double lastPossibleSendTime = startSendTime + duration;
     // keep sending
     while(get_time() <= lastPossibleSendTime && select(1, &rfds, &buf, NULL, &tv)>=0) {
-        // buf[BUFFER_SIZE-1] = '\0';
         int len = sizeof(buf);
         bytesSent += len;
         send(sockfd, buf, len, 0);
