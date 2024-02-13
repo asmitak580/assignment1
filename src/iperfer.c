@@ -43,7 +43,8 @@ handle_server(int port) {
     int n_sock;
     int len = 0;
     int bytesRead = 0;
-
+    double startTime;
+    double endTime;
     
     
     while(1) {
@@ -51,7 +52,7 @@ handle_server(int port) {
             perror("error in accept");
             exit(EXIT_FAILURE);
         }
-        double startTime = get_time();
+        startTime = get_time();
         /* 5. After the connection is established, received data in chunks of 1000 bytes */
         char buf[BUFFER_SIZE];
         while (len = recv(n_sock, buf, sizeof(buf), 0)) {
@@ -63,6 +64,7 @@ handle_server(int port) {
             bytesRead += len;
             fputs(buf, stdout);
         }
+        endTime = get_time();
         close(n_sock);
         break;
     }
@@ -70,7 +72,7 @@ handle_server(int port) {
     
     
     /* 6. When the connection is closed, the program should print out the elapsed time, */
-    double totalTimeSec = get_time() - startTime;
+    double totalTimeSec = endTime - startTime;
     fprintf(stdout, "Time elapsed (seconds): %f\n", totalTimeSec);
     /*    the total number of bytes received (in kilobytes), and the rate */ 
     double totalKBRead = bytesRead / 1000.0;
