@@ -44,14 +44,14 @@ handle_server(int port) {
     int len = 0;
     int bytesRead = 0;
 
-    double startTime = get_time();
+    
     
     while(1) {
         if ((n_sock = accept(sockfd, (struct sockaddr *)&sin, &len)) < 0) {
             perror("error in accept");
             exit(EXIT_FAILURE);
         }
-
+        double startTime = get_time();
         /* 5. After the connection is established, received data in chunks of 1000 bytes */
         char buf[BUFFER_SIZE];
         while (len = recv(n_sock, buf, sizeof(buf), 0)) {
@@ -99,6 +99,7 @@ handle_client(const char *addr, int port, int duration) {
     connect(sockfd, (struct sockaddr *)&sin, sizeof(sin));
     /* 3. Send data to the connected server in chunks of 1000bytes */
     char buf[BUFFER_SIZE];
+    memset(buf, 0, BUFFER_SIZE);
     double startSendTime = get_time(); // in sec
     double lastPossibleSendTime = startSendTime + duration;
     int bytesSent = 0;
@@ -110,8 +111,8 @@ handle_client(const char *addr, int port, int duration) {
     tv.tv_usec = 0;
     // keep sending
     while(get_time() <= lastPossibleSendTime && select(1, &rfds, &buf, NULL, &tv)>=0) {
-        buf[BUFFER_SIZE-1] = '\0';
-        int len = strlen(buf) + 1;
+        // buf[BUFFER_SIZE-1] = '\0';
+        int len = sizeof(buf);
         bytesSent += len;
         send(sockfd, buf, len, 0);
     }
