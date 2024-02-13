@@ -101,9 +101,7 @@ handle_client(const char *addr, int port, int duration) {
     connect(sockfd, (struct sockaddr *)&sin, sizeof(sin));
     /* 3. Send data to the connected server in chunks of 1000bytes */
     char buf[BUFFER_SIZE];
-    memset(buf, 0, BUFFER_SIZE);
-    double startSendTime = get_time(); // in sec
-    double lastPossibleSendTime = startSendTime + duration;
+    memset(buf, 0, BUFFER_SIZE); 
     int bytesSent = 0;
     fd_set rfds;
     struct timeval tv;
@@ -111,6 +109,8 @@ handle_client(const char *addr, int port, int duration) {
     FD_SET(0, &rfds); // stdin is fd 0
     tv.tv_sec = 5;
     tv.tv_usec = 0;
+    double startSendTime = get_time(); // in sec
+    double lastPossibleSendTime = startSendTime + duration;
     // keep sending
     while(get_time() <= lastPossibleSendTime && select(1, &rfds, &buf, NULL, &tv)>=0) {
         // buf[BUFFER_SIZE-1] = '\0';
@@ -118,17 +118,19 @@ handle_client(const char *addr, int port, int duration) {
         bytesSent += len;
         send(sockfd, buf, len, 0);
     }
+    double endSendTime = get_time();
     /* 4. Close the connection after `duration` seconds */
     close(sockfd);
     /* 5. When the connection is closed, the program should print out the elapsed time, */
     /*    the total number of bytes sent (in kilobytes), and the rate */ 
     /*    at which the program sent data (in Mbps) */
-    fprintf(stdout, "Time elapsed (seconds): %d\n", duration);
+    double measuredDuration = endSendTime - startSendTime;
+    fprintf(stdout, "Time elapsed (seconds): %d\n", measuredDuration);
     double totalKBSent = bytesSent / 1000.0;
     fprintf(stdout, "Total Number of kilobytes sent: %f\n", totalKBSent);
     double bitsSent = bytesSent * 8.0;
     double mbSent = bitsSent / 1000000.0;
-    double rateSent = mbSent / duration;
+    double rateSent = mbSent / measuredDuration;
     fprintf(stdout, "Rate of sending (Mbps): %f\n", rateSent);
     return;
 }
